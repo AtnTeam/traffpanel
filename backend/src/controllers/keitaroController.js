@@ -11,13 +11,14 @@ export const getSubId2 = async (req, res) => {
   const requestParams = { ...req.query, ...req.body };
   let responseData = null;
   let found = false;
+  let source = null;
 
   try {
     // Get parameters from query string or body
     const params = { ...req.query, ...req.body };
     
     // Extract source (domain)
-    const source = extractSourceFromParams(params);
+    source = extractSourceFromParams(params);
     
     if (!source) {
       console.log(`[Keitaro API] Source not found (${Date.now() - startTime}ms)`);
@@ -30,7 +31,8 @@ export const getSubId2 = async (req, res) => {
         message: 'Source not found'
       };
       
-      return res.json(responseData);
+      res.json(responseData);
+      return;
     }
     
     // Search for latest sub_id_2 value in database
@@ -48,7 +50,8 @@ export const getSubId2 = async (req, res) => {
         found: true
       };
       
-      return res.json(responseData);
+      res.json(responseData);
+      return;
     } else {
       // Not found in database
       console.log(`[Keitaro API] Not found: ${source} -> sub_id_2=null (${Date.now() - startTime}ms)`);
@@ -60,7 +63,8 @@ export const getSubId2 = async (req, res) => {
         found: false
       };
       
-      return res.json(responseData);
+      res.json(responseData);
+      return;
     }
     
   } catch (error) {
@@ -69,31 +73,48 @@ export const getSubId2 = async (req, res) => {
     responseData = {
       success: false,
       sub_id_2: null,
+      source: source,
+      found: false,
       error: error.message
     };
     
-    return res.status(500).json(responseData);
+    res.status(500).json(responseData);
+    return;
   } finally {
-    // Log the request asynchronously
+    // Log the request asynchronously (don't await to not block response)
     const responseTime = Date.now() - startTime;
-    const source = extractSourceFromParams(requestParams);
     
-    try {
-      await createKeitaroLog({
-        method: req.method,
-        url: req.originalUrl || req.url,
-        source: source || null,
-        params: requestParams,
-        response: responseData,
-        responseTime,
-        ip: req.ip || req.connection.remoteAddress || 'unknown',
-        userAgent: req.get('user-agent') || 'unknown',
-        found: found
-      });
-    } catch (logError) {
+    // Use source from try block or extract again
+    if (!source) {
+      source = extractSourceFromParams(requestParams);
+    }
+    
+    // Ensure responseData is set
+    if (!responseData) {
+      responseData = {
+        success: false,
+        sub_id_2: null,
+        source: source,
+        found: false,
+        error: 'Unknown error'
+      };
+    }
+    
+    // Log asynchronously without blocking
+    createKeitaroLog({
+      method: req.method,
+      url: req.originalUrl || req.url,
+      source: source || null,
+      params: requestParams,
+      response: responseData,
+      responseTime,
+      ip: req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown',
+      userAgent: req.get('user-agent') || 'unknown',
+      found: found
+    }).catch(logError => {
       // Don't fail the request if logging fails
       console.error('Error logging Keitaro request:', logError);
-    }
+    });
   }
 };
 

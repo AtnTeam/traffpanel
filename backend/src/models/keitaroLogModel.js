@@ -79,12 +79,24 @@ export const getKeitaroLogs = async (options = {}) => {
 
   const logs = await db.all(query, params);
   
-  return logs.map(log => ({
-    ...log,
-    params: log.params ? JSON.parse(log.params) : null,
-    response: log.response ? (tryParseJSON(log.response) || log.response) : null,
-    found: log.found === 1
-  }));
+  return logs.map(log => {
+    try {
+      return {
+        ...log,
+        params: log.params ? (tryParseJSON(log.params) || log.params) : null,
+        response: log.response ? (tryParseJSON(log.response) || log.response) : null,
+        found: log.found === 1
+      };
+    } catch (error) {
+      console.error('Error parsing log data:', error, log);
+      return {
+        ...log,
+        params: log.params,
+        response: log.response,
+        found: log.found === 1
+      };
+    }
+  });
 };
 
 /**
@@ -99,12 +111,22 @@ export const getKeitaroLogById = async (id) => {
     return null;
   }
 
-  return {
-    ...result,
-    params: result.params ? JSON.parse(result.params) : null,
-    response: result.response ? (tryParseJSON(result.response) || result.response) : null,
-    found: result.found === 1
-  };
+  try {
+    return {
+      ...result,
+      params: result.params ? (tryParseJSON(result.params) || result.params) : null,
+      response: result.response ? (tryParseJSON(result.response) || result.response) : null,
+      found: result.found === 1
+    };
+  } catch (error) {
+    console.error('Error parsing log data:', error, result);
+    return {
+      ...result,
+      params: result.params,
+      response: result.response,
+      found: result.found === 1
+    };
+  }
 };
 
 /**

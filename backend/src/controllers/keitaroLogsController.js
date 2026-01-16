@@ -16,6 +16,8 @@ export const getAllKeitaroLogs = async (req, res) => {
       found
     } = req.query;
 
+    console.log('[Keitaro Logs API] Request params:', { limit, offset, source, found });
+
     const options = {
       limit: parseInt(limit, 10),
       offset: parseInt(offset, 10),
@@ -27,6 +29,8 @@ export const getAllKeitaroLogs = async (req, res) => {
       getKeitaroLogs(options),
       getKeitaroLogsCount(options)
     ]);
+
+    console.log('[Keitaro Logs API] Found logs:', logs.length, 'Total:', total);
 
     res.json({
       success: true,
