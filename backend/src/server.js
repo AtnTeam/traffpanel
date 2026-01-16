@@ -5,6 +5,8 @@ import { initDatabase } from './config/database.js';
 import clicksRoutes from './routes/clicksRoutes.js';
 import keitaroRoutes from './routes/keitaroRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import logsRoutes from './routes/logsRoutes.js';
+import { requestLogger } from './middleware/requestLogger.js';
 
 dotenv.config();
 
@@ -14,12 +16,16 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Request logging middleware (should be after body parser)
+app.use(requestLogger);
+
 // Public routes (no authentication required)
 app.use('/api/auth', authRoutes);
 
 // Protected routes (authentication required)
 app.use('/api/clicks', clicksRoutes);
 app.use('/api/keitaro', keitaroRoutes);
+app.use('/api/logs', logsRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });

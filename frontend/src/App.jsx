@@ -4,6 +4,7 @@ import Login from './components/Login';
 import DateRangePicker from './components/DateRangePicker';
 import DataTable from './components/DataTable';
 import LogViewer from './components/LogViewer';
+import RequestLogsViewer from './components/RequestLogsViewer';
 import { processClicks } from './services/api';
 import './App.css';
 
@@ -89,6 +90,7 @@ const AppContent = () => {
 
         <LogViewer logData={logData} loading={loadingProcess} />
         <DataTable key={refreshTrigger} />
+        <RequestLogsViewer />
       </main>
     </div>
   );

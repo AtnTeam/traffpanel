@@ -44,6 +44,26 @@ export const initDatabase = async () => {
       
       CREATE INDEX IF NOT EXISTS idx_source ON clicks_mapping(source);
       CREATE INDEX IF NOT EXISTS idx_datetime ON clicks_mapping(datetime);
+      
+      CREATE TABLE IF NOT EXISTS request_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        method TEXT NOT NULL,
+        url TEXT NOT NULL,
+        path TEXT NOT NULL,
+        headers TEXT,
+        body TEXT,
+        status_code INTEGER NOT NULL,
+        response TEXT,
+        response_time INTEGER,
+        ip_address TEXT,
+        user_agent TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_request_logs_created_at ON request_logs(created_at);
+      CREATE INDEX IF NOT EXISTS idx_request_logs_method ON request_logs(method);
+      CREATE INDEX IF NOT EXISTS idx_request_logs_status_code ON request_logs(status_code);
+      CREATE INDEX IF NOT EXISTS idx_request_logs_path ON request_logs(path);
     `;
 
     await db.exec(createTableQuery);
