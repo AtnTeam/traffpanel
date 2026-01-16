@@ -9,5 +9,5 @@ dist/
 .vite/
 .cursor/rules/
 kt_photo/
-README.md
-
+# Ignore all .md files
+*.md
