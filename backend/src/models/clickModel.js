@@ -52,14 +52,3 @@ export const getAllClicks = async () => {
   return result;
 };
 
-export const getLatestClickBySource = async (source, datetime) => {
-  const db = getDb();
-  const query = `
-    SELECT * FROM clicks_mapping 
-    WHERE source = ? AND datetime < ?
-    ORDER BY datetime DESC
-    LIMIT 1
-  `;
-  const result = await db.get(query, [source, datetime]);
-  return result || null;
-};

@@ -1,61 +1,71 @@
 .log-viewer {
   background: white;
   border-radius: 8px;
-  padding: 20px;
+  padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  margin-top: 2rem;
 }
 
-.log-viewer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  flex-wrap: wrap;
-  gap: 10px;
+.log-viewer h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
 }
 
-.log-viewer-header h2 {
-  font-size: 20px;
+.log-viewer-loading {
+  text-align: center;
+  padding: 1rem;
+  color: #666;
+}
+
+.log-viewer-success {
   color: #333;
 }
 
 .log-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.log-stat {
   display: flex;
-  gap: 15px;
-  font-size: 14px;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.85rem;
   color: #666;
+  font-weight: 500;
 }
 
-.log-stats span {
-  padding: 4px 8px;
-  background-color: #f0f0f0;
-  border-radius: 4px;
-}
-
-.log-viewer-content {
-  max-height: 500px;
-  overflow-y: auto;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 15px;
-  background-color: #f8f9fa;
-}
-
-.log-viewer-content.empty,
-.log-viewer-content.loading {
-  text-align: center;
-  padding: 40px;
-  color: #999;
-}
-
-.log-json {
-  margin: 0;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  line-height: 1.5;
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 600;
   color: #333;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+}
+
+.stat-success {
+  color: #27ae60;
+}
+
+.stat-info {
+  color: #3498db;
+}
+
+.log-viewer-error {
+  color: #e74c3c;
+}
+
+.error-message {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.error-details {
+  font-size: 0.9rem;
+  color: #999;
+  margin-top: 0.5rem;
 }
 

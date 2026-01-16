@@ -1,36 +1,36 @@
 .data-table-container {
   background: white;
   border-radius: 8px;
-  padding: 20px;
+  padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  margin-top: 2rem;
 }
 
 .data-table-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 1rem;
 }
 
 .data-table-header h2 {
-  font-size: 20px;
+  margin: 0;
   color: #333;
 }
 
 .refresh-button {
-  padding: 8px 16px;
-  background-color: #4a90e2;
+  padding: 0.5rem 1rem;
+  background-color: #667eea;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
 }
 
 .refresh-button:hover {
-  background-color: #357abd;
+  background-color: #5568d3;
 }
 
 .data-table-wrapper {
@@ -40,7 +40,7 @@
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 0.9rem;
 }
 
 .data-table thead {
@@ -48,7 +48,7 @@
 }
 
 .data-table th {
-  padding: 12px;
+  padding: 0.75rem;
   text-align: left;
   font-weight: 600;
   color: #555;
@@ -56,7 +56,7 @@
 }
 
 .data-table td {
-  padding: 12px;
+  padding: 0.75rem;
   border-bottom: 1px solid #dee2e6;
 }
 
@@ -64,39 +64,28 @@
   background-color: #f8f9fa;
 }
 
-.data-table-footer {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px solid #dee2e6;
-  color: #666;
-  font-size: 14px;
+.no-data {
+  text-align: center;
+  color: #999;
+  padding: 2rem !important;
 }
 
 .data-table-loading,
-.data-table-empty {
+.data-table-error {
   text-align: center;
-  padding: 40px;
-  color: #999;
+  padding: 2rem;
+  color: #666;
 }
 
 .data-table-error {
-  text-align: center;
-  padding: 40px;
-  color: #d32f2f;
+  color: #e74c3c;
 }
 
-.retry-button {
-  margin-top: 10px;
-  padding: 8px 16px;
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.retry-button:hover {
-  background-color: #357abd;
+.data-table-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+  color: #666;
+  font-size: 0.9rem;
 }
 

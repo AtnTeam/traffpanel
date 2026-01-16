@@ -1,90 +1,52 @@
-import axios from 'axios';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const getAuthToken = () => {
+  return localStorage.getItem('token');
+};
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
+const apiRequest = async (endpoint, options = {}) => {
+  const token = getAuthToken();
+  const headers = {
     'Content-Type': 'application/json',
-  },
-});
+    ...options.headers,
+  };
 
-// Add token to requests if available
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
-);
 
-// Handle 401 errors (unauthorized)
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('token');
-      // Redirect to login will be handled by App component
-      window.location.reload();
-    }
-    return Promise.reject(error);
-  }
-);
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
 
-export const processClicks = async (from, to) => {
-  try {
-    const response = await api.post('/clicks/process', { from, to });
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Network error' }));
+    throw error;
   }
-};
 
-export const getAllClicks = async () => {
-  try {
-    const response = await api.get('/clicks/data');
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
-
-export const getKeitaroLogs = async (limit = 100, offset = 0) => {
-  try {
-    const response = await api.get('/keitaro/logs', {
-      params: { limit, offset }
-    });
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
+  return response.json();
 };
 
 export const login = async (username, password) => {
-  try {
-    const response = await api.post('/auth/login', { username, password });
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
+  return apiRequest('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
 };
 
-export const verifyToken = async (token) => {
-  try {
-    const response = await api.get('/auth/verify', {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
+export const verifyToken = async () => {
+  return apiRequest('/api/auth/verify');
+};
+
+export const processClicks = async (from, to) => {
+  return apiRequest('/api/clicks/process', {
+    method: 'POST',
+    body: JSON.stringify({ from, to }),
+  });
+};
+
+export const getAllClicks = async () => {
+  return apiRequest('/api/clicks/data');
 };
 

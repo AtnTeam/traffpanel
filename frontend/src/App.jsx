@@ -4,8 +4,7 @@ import Login from './components/Login';
 import DateRangePicker from './components/DateRangePicker';
 import DataTable from './components/DataTable';
 import LogViewer from './components/LogViewer';
-import KeitaroLogs from './components/KeitaroLogs';
-import { processClicks, getAllClicks } from './services/api';
+import { processClicks } from './services/api';
 import './App.css';
 
 const AppContent = () => {
@@ -16,13 +15,12 @@ const AppContent = () => {
   const [loadingProcess, setLoadingProcess] = useState(false);
   const [error, setError] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [activeTab, setActiveTab] = useState('data'); // 'data' or 'keitaro'
 
   if (loading) {
     return (
       <div className="app">
         <div style={{ textAlign: 'center', padding: '50px' }}>
-          <p>Загрузка...</p>
+          <p>Loading...</p>
         </div>
       </div>
     );
@@ -34,7 +32,7 @@ const AppContent = () => {
 
   const handleProcess = async () => {
     if (!from || !to) {
-      setError('Пожалуйста, выберите обе даты');
+      setError('Please select both dates');
       return;
     }
 
@@ -49,7 +47,7 @@ const AppContent = () => {
       // Trigger data refresh
       setRefreshTrigger(prev => prev + 1);
     } catch (err) {
-      setError(err.error || err.message || 'Ошибка выполнения запроса');
+      setError(err.error || err.message || 'Request error');
       console.error('Error processing clicks:', err);
     } finally {
       setLoadingProcess(false);
@@ -61,7 +59,7 @@ const AppContent = () => {
       <header className="app-header">
         <h1>Trafic Back Panel</h1>
         <button onClick={logout} className="logout-button">
-          Выйти
+          Logout
         </button>
       </header>
       
@@ -79,7 +77,7 @@ const AppContent = () => {
             disabled={loadingProcess}
             className="process-button"
           >
-            {loadingProcess ? 'Обработка...' : 'Выполнить запрос'}
+            {loadingProcess ? 'Processing...' : 'Process Data'}
           </button>
           
           {error && (
@@ -89,33 +87,8 @@ const AppContent = () => {
           )}
         </div>
 
-        {/* Tabs */}
-        <div className="tabs">
-          <button
-            className={`tab-button ${activeTab === 'data' ? 'active' : ''}`}
-            onClick={() => setActiveTab('data')}
-          >
-            Данные и Логи API
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'keitaro' ? 'active' : ''}`}
-            onClick={() => setActiveTab('keitaro')}
-          >
-            Логи Keitaro
-          </button>
-        </div>
-
-        {/* Tab content */}
-        {activeTab === 'data' && (
-          <>
-            <LogViewer logData={logData} loading={loadingProcess} />
-            <DataTable key={refreshTrigger} />
-          </>
-        )}
-
-        {activeTab === 'keitaro' && (
-          <KeitaroLogs />
-        )}
+        <LogViewer logData={logData} loading={loadingProcess} />
+        <DataTable key={refreshTrigger} />
       </main>
     </div>
   );
