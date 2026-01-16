@@ -4,7 +4,6 @@ import Login from './components/Login';
 import DateRangePicker from './components/DateRangePicker';
 import DataTable from './components/DataTable';
 import LogViewer from './components/LogViewer';
-import RequestLogsViewer from './components/RequestLogsViewer';
 import KeitaroLogsViewer from './components/KeitaroLogsViewer';
 import { processClicks } from './services/api';
 import './App.css';
@@ -17,7 +16,7 @@ const AppContent = () => {
   const [loadingProcess, setLoadingProcess] = useState(false);
   const [error, setError] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [activeTab, setActiveTab] = useState('main'); // 'main' or 'logs' or 'keitaro'
+  const [activeTab, setActiveTab] = useState('main'); // 'main' or 'keitaro'
 
   if (loading) {
     return (
@@ -74,12 +73,6 @@ const AppContent = () => {
           Main
         </button>
         <button
-          className={`tab-button ${activeTab === 'logs' ? 'active' : ''}`}
-          onClick={() => setActiveTab('logs')}
-        >
-          All Logs
-        </button>
-        <button
           className={`tab-button ${activeTab === 'keitaro' ? 'active' : ''}`}
           onClick={() => setActiveTab('keitaro')}
         >
@@ -116,10 +109,6 @@ const AppContent = () => {
             <LogViewer logData={logData} loading={loadingProcess} />
             <DataTable key={refreshTrigger} />
           </>
-        )}
-
-        {activeTab === 'logs' && (
-          <RequestLogsViewer />
         )}
 
         {activeTab === 'keitaro' && (
