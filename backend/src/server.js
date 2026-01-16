@@ -14,7 +14,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+// CORS configuration - allow requests from any origin for Keitaro landing pages
+app.use(cors({
+  origin: true, // Allow all origins
+  credentials: false,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
+}));
 app.use(express.json());
 
 // Request logging middleware (should be after body parser)

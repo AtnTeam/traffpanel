@@ -13,6 +13,12 @@ export const getSubId2 = async (req, res) => {
   let found = false;
   let source = null;
 
+  // Log incoming request for debugging
+  console.log(`[Keitaro API] Incoming request: ${req.method} ${req.originalUrl || req.url}`);
+  console.log(`[Keitaro API] Query params:`, req.query);
+  console.log(`[Keitaro API] Body:`, req.body);
+  console.log(`[Keitaro API] IP:`, req.ip || req.connection.remoteAddress);
+
   try {
     // Get parameters from query string or body
     const params = { ...req.query, ...req.body };

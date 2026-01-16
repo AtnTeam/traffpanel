@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .loader-container {
+            text-align: center;
+        }
+
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            font-size: 18px;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        .error {
+            display: none;
+            color: #ff6b6b;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="loader-container">
+        <div class="loader"></div>
+        <div class="loader-text">Processing your request...</div>
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        (function() {
+            // Extract domain from URL parameters or referrer
+            function extractDomain() {
+                const urlParams = new URLSearchParams(window.location.search);
+                
+                // Try different parameter names
+                let domain = urlParams.get('source') || 
+                            urlParams.get('domain') || 
+                            urlParams.get('referrer') ||
+                            urlParams.get('ref');
+                
+                // If not in params, try to extract from document.referrer
+                if (!domain && document.referrer) {
+                    try {
+                        const referrerUrl = new URL(document.referrer);
+                        domain = referrerUrl.hostname;
+                    } catch (e) {
+                        console.warn('Could not parse referrer:', e);
+                    }
+                }
+                
+                // Fallback: try to get from any URL parameter that might contain domain
+                if (!domain) {
+                    for (const [key, value] of urlParams.entries()) {
+                        if (value && (value.includes('.') || value.includes('://'))) {
+                            try {
+                                const url = new URL(value.startsWith('http') ? value : 'https://' + value);
+                                domain = url.hostname;
+                                break;
+                            } catch (e) {
+                                // Not a valid URL
+                            }
+                        }
+                    }
+                }
+                
+                return domain;
+            }
+
+            // Get API URL from Keitaro variable or use default
+            function getApiUrl() {
+                // Keitaro allows to pass custom variables
+                const urlParams = new URLSearchParams(window.location.search);
+                // Fixed: removed double http://
+                const apiUrl = urlParams.get('api_url') || 'http://64.111.93.10:3001';
+                // Correct endpoint path: /api/keitaro/sub_id_2
+                return `${apiUrl}/api/keitaro/sub_id_2`;
+            }
+
+            // Get offer URL from Keitaro {offer} variable
+            function getOfferUrl() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('offer') || urlParams.get('offer_url') || '';
+            }
+
+            // Redirect to offer with sub2
+            function redirectToOffer(sub2) {
+                const offerUrl = getOfferUrl();
+                
+                if (!offerUrl) {
+                    showError('Offer URL not found');
+                    return;
+                }
+
+                try {
+                    const url = new URL(offerUrl);
+                    
+                    // Add sub2 to URL parameters
+                    url.searchParams.set('sub2', sub2 || '');
+                    url.searchParams.set('sub_id_2', sub2 || '');
+                    
+                    // Preserve other Keitaro parameters
+                    const currentParams = new URLSearchParams(window.location.search);
+                    for (const [key, value] of currentParams.entries()) {
+                        if (key !== 'offer' && key !== 'offer_url' && key !== 'api_url') {
+                            if (!url.searchParams.has(key)) {
+                                url.searchParams.set(key, value);
+                            }
+                        }
+                    }
+                    
+                    // Redirect
+                    window.location.href = url.toString();
+                } catch (e) {
+                    showError('Invalid offer URL: ' + e.message);
+                }
+            }
+
+            // Show error message
+            function showError(message) {
+                const errorEl = document.getElementById('error');
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+                document.querySelector('.loader-text').textContent = 'Error occurred';
+            }
+
+            // Main function
+            async function processRequest() {
+                try {
+                    const domain = extractDomain();
+                    
+                    if (!domain) {
+                        console.warn('Domain not found, proceeding without sub2');
+                        // Still redirect even without domain
+                        const offerUrl = getOfferUrl();
+                        if (offerUrl) {
+                            redirectToOffer(null);
+                        } else {
+                            showError('Domain and offer URL not found');
+                        }
+                        return;
+                    }
+
+                    // Make API request
+                    const apiUrl = getApiUrl();
+                    console.log('Making API request to:', apiUrl);
+                    console.log('Domain:', domain);
+                    
+                    const response = await fetch(`${apiUrl}?source=${encodeURIComponent(domain)}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        // Add mode and credentials for CORS
+                        mode: 'cors',
+                        credentials: 'omit'
+                    });
+
+                    console.log('API response status:', response.status);
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('API error response:', errorText);
+                        throw new Error(`API request failed: ${response.status} - ${errorText}`);
+                    }
+
+                    const data = await response.json();
+                    console.log('API response data:', data);
+                    
+                    if (data.success) {
+                        // Redirect with sub2 value
+                        redirectToOffer(data.sub_id_2 || null);
+                    } else {
+                        throw new Error(data.error || 'Unknown error');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error processing request:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack,
+                        name: error.name
+                    });
+                    showError('Failed to process request. Redirecting...');
+                    
+                    // Fallback: redirect without sub2 after delay
+                    setTimeout(() => {
+                        const offerUrl = getOfferUrl();
+                        if (offerUrl) {
+                            redirectToOffer(null);
+                        } else {
+                            showError('Cannot redirect: offer URL not found');
+                        }
+                    }, 2000);
+                }
+            }
+
+            // Start processing when page loads
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', processRequest);
+            } else {
+                processRequest();
+            }
+        })();
+    </script>
+</body>
+</html>
+
