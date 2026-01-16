@@ -74,3 +74,19 @@ export const cleanupOldLogs = async (daysToKeep = 30) => {
   });
 };
 
+export const getKeitaroLogs = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.limit) queryParams.append('limit', params.limit);
+  if (params.offset) queryParams.append('offset', params.offset);
+  if (params.source) queryParams.append('source', params.source);
+  if (params.found !== undefined) queryParams.append('found', params.found);
+  
+  const queryString = queryParams.toString();
+  const endpoint = `/api/keitaro-logs${queryString ? `?${queryString}` : ''}`;
+  return apiRequest(endpoint);
+};
+
+export const getKeitaroLogById = async (id) => {
+  return apiRequest(`/api/keitaro-logs/${id}`);
+};
+

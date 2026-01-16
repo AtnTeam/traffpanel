@@ -5,6 +5,7 @@ import DateRangePicker from './components/DateRangePicker';
 import DataTable from './components/DataTable';
 import LogViewer from './components/LogViewer';
 import RequestLogsViewer from './components/RequestLogsViewer';
+import KeitaroLogsViewer from './components/KeitaroLogsViewer';
 import { processClicks } from './services/api';
 import './App.css';
 
@@ -16,6 +17,7 @@ const AppContent = () => {
   const [loadingProcess, setLoadingProcess] = useState(false);
   const [error, setError] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [activeTab, setActiveTab] = useState('main'); // 'main' or 'logs' or 'keitaro'
 
   if (loading) {
     return (
@@ -64,33 +66,65 @@ const AppContent = () => {
         </button>
       </header>
       
+      <div className="tabs-container">
+        <button
+          className={`tab-button ${activeTab === 'main' ? 'active' : ''}`}
+          onClick={() => setActiveTab('main')}
+        >
+          Main
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'logs' ? 'active' : ''}`}
+          onClick={() => setActiveTab('logs')}
+        >
+          All Logs
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'keitaro' ? 'active' : ''}`}
+          onClick={() => setActiveTab('keitaro')}
+        >
+          Keitaro Logs
+        </button>
+      </div>
+      
       <main className="app-main">
-        <div className="control-panel">
-          <DateRangePicker
-            from={from}
-            to={to}
-            onFromChange={setFrom}
-            onToChange={setTo}
-          />
-          
-          <button
-            onClick={handleProcess}
-            disabled={loadingProcess}
-            className="process-button"
-          >
-            {loadingProcess ? 'Processing...' : 'Process Data'}
-          </button>
-          
-          {error && (
-            <div className="error-message">
-              {error}
+        {activeTab === 'main' && (
+          <>
+            <div className="control-panel">
+              <DateRangePicker
+                from={from}
+                to={to}
+                onFromChange={setFrom}
+                onToChange={setTo}
+              />
+              
+              <button
+                onClick={handleProcess}
+                disabled={loadingProcess}
+                className="process-button"
+              >
+                {loadingProcess ? 'Processing...' : 'Process Data'}
+              </button>
+              
+              {error && (
+                <div className="error-message">
+                  {error}
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <LogViewer logData={logData} loading={loadingProcess} />
-        <DataTable key={refreshTrigger} />
-        <RequestLogsViewer />
+            <LogViewer logData={logData} loading={loadingProcess} />
+            <DataTable key={refreshTrigger} />
+          </>
+        )}
+
+        {activeTab === 'logs' && (
+          <RequestLogsViewer />
+        )}
+
+        {activeTab === 'keitaro' && (
+          <KeitaroLogsViewer />
+        )}
       </main>
     </div>
   );

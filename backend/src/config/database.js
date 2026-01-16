@@ -64,6 +64,24 @@ export const initDatabase = async () => {
       CREATE INDEX IF NOT EXISTS idx_request_logs_method ON request_logs(method);
       CREATE INDEX IF NOT EXISTS idx_request_logs_status_code ON request_logs(status_code);
       CREATE INDEX IF NOT EXISTS idx_request_logs_path ON request_logs(path);
+      
+      CREATE TABLE IF NOT EXISTS keitaro_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        method TEXT NOT NULL,
+        url TEXT NOT NULL,
+        source TEXT,
+        params TEXT,
+        response TEXT,
+        response_time INTEGER,
+        ip_address TEXT,
+        user_agent TEXT,
+        found INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_keitaro_logs_created_at ON keitaro_logs(created_at);
+      CREATE INDEX IF NOT EXISTS idx_keitaro_logs_source ON keitaro_logs(source);
+      CREATE INDEX IF NOT EXISTS idx_keitaro_logs_found ON keitaro_logs(found);
     `;
 
     await db.exec(createTableQuery);
