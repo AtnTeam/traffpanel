@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.*
+!**/env.example
+**/env copy.example
+*.log
+.DS_Store
+dist/
+.vite/
+.cursor/rules/
+kt_photo/
+README.md
+
