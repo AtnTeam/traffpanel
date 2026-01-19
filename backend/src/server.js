@@ -14,6 +14,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy for Cloudflare (important for correct IP detection and HTTPS)
+app.set('trust proxy', true);
+
 // CORS configuration - allow requests from any origin for Keitaro landing pages
 app.use(cors({
   origin: true, // Allow all origins
@@ -43,8 +46,10 @@ const startServer = async () => {
   try {
     await initDatabase();
     
-    app.listen(PORT, () => {
+    // Listen on all interfaces (0.0.0.0) to accept connections from domain
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server is running on port ${PORT}`);
+      console.log(`Accessible via: http://localhost:${PORT} or https://cetoki.com`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

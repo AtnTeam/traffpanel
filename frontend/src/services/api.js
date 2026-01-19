@@ -1,4 +1,28 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Auto-detect API URL based on current hostname
+// In production (cetoki.com), use HTTPS domain
+// In development (localhost), use localhost
+const getApiBaseUrl = () => {
+  // Allow override via environment variable
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // Auto-detect based on current hostname
+  const hostname = window.location.hostname;
+  
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    // Development mode
+    return 'http://localhost:3001';
+  } else if (hostname === 'cetoki.com' || hostname.includes('cetoki.com')) {
+    // Production mode - use HTTPS domain
+    return 'https://cetoki.com';
+  } else {
+    // Fallback: use same protocol and hostname as current page
+    return `${window.location.protocol}//${hostname}`;
+  }
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const getAuthToken = () => {
   return localStorage.getItem('token');

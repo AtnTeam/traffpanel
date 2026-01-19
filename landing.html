@@ -12,13 +12,14 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
+            overflow: hidden;
         }
 
         .loader-container {
@@ -46,11 +47,8 @@
             opacity: 0.9;
         }
 
-        .error {
+        #tracking-data {
             display: none;
-            color: #ff6b6b;
-            margin-top: 20px;
-            font-size: 16px;
         }
     </style>
 </head>
@@ -58,185 +56,166 @@
     <div class="loader-container">
         <div class="loader"></div>
         <div class="loader-text">Processing your request...</div>
-        <div class="error" id="error"></div>
     </div>
+
+    <div id="tracking-data" 
+         data-referrer="{referrer}"
+         data-offer="{offer}"
+         data-api-url="{api_url}"></div>
 
     <script>
         (function() {
-            // Extract domain from URL parameters or referrer
-            function extractDomain() {
-                const urlParams = new URLSearchParams(window.location.search);
-                
-                // Try different parameter names
-                let domain = urlParams.get('source') || 
-                            urlParams.get('domain') || 
-                            urlParams.get('referrer') ||
-                            urlParams.get('ref');
-                
-                // If not in params, try to extract from document.referrer
-                if (!domain && document.referrer) {
+            const trackingData = document.getElementById('tracking-data');
+            
+            // Get domain from multiple sources
+            function getDomain() {
+                // 1. Try from Keitaro {referrer} variable
+                const referrer = trackingData?.getAttribute('data-referrer') || '';
+                if (referrer && referrer !== '{referrer}' && referrer !== '' && referrer !== '$') {
                     try {
-                        const referrerUrl = new URL(document.referrer);
-                        domain = referrerUrl.hostname;
+                        // If it's already a domain (contains dot, no spaces, no protocol)
+                        if (referrer.includes('.') && !referrer.includes(' ') && !referrer.includes('://')) {
+                            return referrer.split('/')[0].split('?')[0].split(':')[0];
+                        }
+                        // If it's a full URL
+                        const url = new URL(referrer.startsWith('http') ? referrer : 'https://' + referrer);
+                        return url.hostname;
                     } catch (e) {
-                        console.warn('Could not parse referrer:', e);
-                    }
-                }
-                
-                // Fallback: try to get from any URL parameter that might contain domain
-                if (!domain) {
-                    for (const [key, value] of urlParams.entries()) {
-                        if (value && (value.includes('.') || value.includes('://'))) {
-                            try {
-                                const url = new URL(value.startsWith('http') ? value : 'https://' + value);
-                                domain = url.hostname;
-                                break;
-                            } catch (e) {
-                                // Not a valid URL
-                            }
+                        // Try to extract domain manually
+                        const match = referrer.match(/(?:https?:\/\/)?([^\/\s\?]+)/);
+                        if (match && match[1] && match[1].includes('.')) {
+                            return match[1].split(':')[0];
                         }
                     }
                 }
                 
-                return domain;
+                // 2. Try from URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                let domain = urlParams.get('source') || urlParams.get('domain') || urlParams.get('referrer');
+                
+                // Clean domain from URL params
+                if (domain) {
+                    domain = domain.trim();
+                    if (domain.includes('://')) {
+                        try {
+                            const url = new URL(domain);
+                            domain = url.hostname;
+                        } catch (e) {
+                            domain = domain.split('/')[2] || domain.split('/')[0];
+                        }
+                    }
+                    if (domain && domain.includes('.')) {
+                        return domain.split('/')[0].split('?')[0].split(':')[0];
+                    }
+                }
+                
+                // 3. Try from document.referrer
+                if (!domain && document.referrer) {
+                    try {
+                        const refUrl = new URL(document.referrer);
+                        domain = refUrl.hostname;
+                    } catch (e) {
+                        // Ignore
+                    }
+                }
+                
+                return domain || null;
             }
 
-            // Get API URL from Keitaro variable or use default
+            // Get offer URL
+            function getOffer() {
+                const offer = trackingData?.getAttribute('data-offer');
+                if (offer && offer !== '{offer}' && offer !== '') {
+                    return offer;
+                }
+                return new URLSearchParams(window.location.search).get('offer') || '';
+            }
+
+            // Get API URL - must be absolute URL, always use HTTPS with domain
             function getApiUrl() {
-                // Keitaro allows to pass custom variables
-                const urlParams = new URLSearchParams(window.location.search);
-                // Fixed: removed double http://
-                const apiUrl = urlParams.get('api_url') || 'http://64.111.93.10:3001';
-                // Correct endpoint path: /api/keitaro/sub_id_2
+                let apiUrl = trackingData?.getAttribute('data-api-url') || 
+                            new URLSearchParams(window.location.search).get('api_url') || 
+                            '';
+                
+                // Clean URL
+                apiUrl = apiUrl.trim().replace(/\/$/, '');
+                
+                // If not absolute URL, use default HTTPS domain
+                if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+                    // Always use HTTPS with domain through Cloudflare
+                    apiUrl = 'https://cetoki.com';
+                } else {
+                    // Always convert HTTP to HTTPS for security
+                    if (apiUrl.startsWith('http://')) {
+                        apiUrl = apiUrl.replace('http://', 'https://');
+                    }
+                    // Replace IP addresses with domain if present
+                    if (apiUrl.includes('64.111.93.10')) {
+                        apiUrl = apiUrl.replace(/64\.111\.93\.10(?::\d+)?/, 'cetoki.com');
+                    }
+                }
+                
                 return `${apiUrl}/api/keitaro/sub_id_2`;
             }
 
-            // Get offer URL from Keitaro {offer} variable
-            function getOfferUrl() {
-                const urlParams = new URLSearchParams(window.location.search);
-                return urlParams.get('offer') || urlParams.get('offer_url') || '';
-            }
-
-            // Redirect to offer with sub2
-            function redirectToOffer(sub2) {
-                const offerUrl = getOfferUrl();
+            // Redirect with sub_id_2 (if no sub_id_2, use "null" as string)
+            function redirect(sub_id_2) {
+                const offer = getOffer();
+                if (!offer) return;
                 
-                if (!offerUrl) {
-                    showError('Offer URL not found');
-                    return;
-                }
-
                 try {
-                    const url = new URL(offerUrl);
-                    
-                    // Add sub2 to URL parameters
-                    url.searchParams.set('sub2', sub2 || '');
-                    url.searchParams.set('sub_id_2', sub2 || '');
-                    
-                    // Preserve other Keitaro parameters
-                    const currentParams = new URLSearchParams(window.location.search);
-                    for (const [key, value] of currentParams.entries()) {
-                        if (key !== 'offer' && key !== 'offer_url' && key !== 'api_url') {
-                            if (!url.searchParams.has(key)) {
-                                url.searchParams.set(key, value);
-                            }
-                        }
-                    }
-                    
-                    // Redirect
+                    const url = new URL(offer);
+                    const sub2Value = sub_id_2 || 'null';
+                    url.searchParams.set('sub_id_2', sub2Value);
+                    url.searchParams.set('sub2', sub2Value);
                     window.location.href = url.toString();
                 } catch (e) {
-                    showError('Invalid offer URL: ' + e.message);
+                    window.location.href = offer;
                 }
             }
 
-            // Show error message
-            function showError(message) {
-                const errorEl = document.getElementById('error');
-                errorEl.textContent = message;
-                errorEl.style.display = 'block';
-                document.querySelector('.loader-text').textContent = 'Error occurred';
-            }
+            // Main process - ALWAYS makes API request
+            async function process() {
+                const domain = getDomain();
+                const apiUrl = getApiUrl();
+                
+                // Build request URL - only include source if domain exists
+                let requestUrl;
+                if (domain && domain.trim() !== '') {
+                    requestUrl = `${apiUrl}?source=${encodeURIComponent(domain)}`;
+                } else {
+                    // If no domain, still make request but without source parameter
+                    requestUrl = apiUrl;
+                }
 
-            // Main function
-            async function processRequest() {
                 try {
-                    const domain = extractDomain();
-                    
-                    if (!domain) {
-                        console.warn('Domain not found, proceeding without sub2');
-                        // Still redirect even without domain
-                        const offerUrl = getOfferUrl();
-                        if (offerUrl) {
-                            redirectToOffer(null);
-                        } else {
-                            showError('Domain and offer URL not found');
-                        }
-                        return;
-                    }
-
-                    // Make API request
-                    const apiUrl = getApiUrl();
-                    console.log('Making API request to:', apiUrl);
-                    console.log('Domain:', domain);
-                    
-                    const response = await fetch(`${apiUrl}?source=${encodeURIComponent(domain)}`, {
+                    const response = await fetch(requestUrl, {
                         method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json'
+                        headers: { 
+                            'Accept': 'application/json'
                         },
-                        // Add mode and credentials for CORS
                         mode: 'cors',
-                        credentials: 'omit'
+                        cache: 'no-cache'
                     });
 
-                    console.log('API response status:', response.status);
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('API error response:', errorText);
-                        throw new Error(`API request failed: ${response.status} - ${errorText}`);
-                    }
-
-                    const data = await response.json();
-                    console.log('API response data:', data);
-                    
-                    if (data.success) {
-                        // Redirect with sub2 value
-                        redirectToOffer(data.sub_id_2 || null);
+                    if (response.ok) {
+                        const data = await response.json();
+                        redirect(data.sub_id_2 || null);
                     } else {
-                        throw new Error(data.error || 'Unknown error');
+                        redirect(null);
                     }
-                    
-                } catch (error) {
-                    console.error('Error processing request:', error);
-                    console.error('Error details:', {
-                        message: error.message,
-                        stack: error.stack,
-                        name: error.name
-                    });
-                    showError('Failed to process request. Redirecting...');
-                    
-                    // Fallback: redirect without sub2 after delay
-                    setTimeout(() => {
-                        const offerUrl = getOfferUrl();
-                        if (offerUrl) {
-                            redirectToOffer(null);
-                        } else {
-                            showError('Cannot redirect: offer URL not found');
-                        }
-                    }, 2000);
+                } catch (e) {
+                    redirect(null);
                 }
             }
 
-            // Start processing when page loads
+            // Start immediately
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', processRequest);
+                document.addEventListener('DOMContentLoaded', process);
             } else {
-                processRequest();
+                process();
             }
         })();
     </script>
 </body>
 </html>
-
