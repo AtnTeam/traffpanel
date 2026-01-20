@@ -28,6 +28,7 @@ const AppContent = () => {
   const countdownRef = useRef(null);
   const loadingProcessRef = useRef(false);
   const saveSettingsTimeoutRef = useRef(null);
+  const previousIntervalRef = useRef(null); // Track previous interval to detect changes
 
   // Predefined interval options (in minutes)
   const intervalOptions = [
@@ -53,10 +54,19 @@ const AppContent = () => {
         setSettingsLoading(true);
         const response = await getSettings();
         if (response.success && response.settings) {
-          setIsAutoRefreshEnabled(response.settings.autoRefreshEnabled || false);
-          setRefreshIntervalMinutes(response.settings.autoRefreshInterval || 60);
-          setFrom(response.settings.dateFrom || '2026-01-14');
-          setTo(response.settings.dateTo || '2026-01-15');
+          const settings = response.settings;
+          setIsAutoRefreshEnabled(settings.autoRefreshEnabled || false);
+          setRefreshIntervalMinutes(settings.autoRefreshInterval || 60);
+          setFrom(settings.dateFrom || '2026-01-14');
+          setTo(settings.dateTo || '2026-01-15');
+          
+          // Restore last refresh time from server
+          if (settings.lastRefreshTime) {
+            lastRefreshTimeRef.current = new Date(settings.lastRefreshTime);
+          }
+          
+          // Store current interval to detect changes
+          previousIntervalRef.current = settings.autoRefreshInterval || 60;
         }
       } catch (err) {
         console.error('Error loading settings:', err);
@@ -85,6 +95,7 @@ const AppContent = () => {
           autoRefreshInterval: refreshIntervalMinutes,
           dateFrom: from,
           dateTo: to,
+          // Don't update lastRefreshTime here - it's updated separately after refresh
         });
       } catch (err) {
         console.error('Error saving settings:', err);
@@ -118,6 +129,15 @@ const AppContent = () => {
       return;
     }
 
+    // Check if interval changed - if so, reset timer
+    const intervalChanged = previousIntervalRef.current !== null && 
+                            previousIntervalRef.current !== refreshIntervalMinutes;
+    if (intervalChanged) {
+      // Reset last refresh time when interval changes
+      lastRefreshTimeRef.current = null;
+    }
+    previousIntervalRef.current = refreshIntervalMinutes;
+
     // Function to perform auto-refresh
     const performAutoRefresh = async () => {
       if (loadingProcessRef.current) {
@@ -132,7 +152,19 @@ const AppContent = () => {
         const response = await processClicks(from, to);
         setLogData(response);
         setRefreshTrigger(prev => prev + 1);
-        lastRefreshTimeRef.current = new Date();
+        
+        // Update last refresh time and save to server
+        const now = new Date();
+        lastRefreshTimeRef.current = now;
+        
+        // Save lastRefreshTime to server
+        try {
+          await updateSettings({
+            lastRefreshTime: now.toISOString(),
+          });
+        } catch (err) {
+          console.error('Error saving last refresh time:', err);
+        }
       } catch (err) {
         setError(err.error || err.message || 'Auto-refresh error');
         console.error('Error during auto-refresh:', err);
@@ -164,8 +196,23 @@ const AppContent = () => {
       }
     };
 
-    // Perform initial refresh immediately when enabled
-    performAutoRefresh();
+    // If we have a saved lastRefreshTime, don't perform immediate refresh
+    // Only refresh if timer has already expired or interval changed
+    const shouldPerformImmediateRefresh = () => {
+      if (intervalChanged) return true;
+      if (!lastRefreshTimeRef.current) return true;
+      
+      const now = new Date();
+      const lastRefresh = lastRefreshTimeRef.current;
+      const intervalMs = refreshIntervalMinutes * 60 * 1000;
+      const nextRefresh = new Date(lastRefresh.getTime() + intervalMs);
+      return nextRefresh <= now;
+    };
+
+    // Perform refresh only if timer expired or interval changed
+    if (shouldPerformImmediateRefresh()) {
+      performAutoRefresh();
+    }
 
     // Set up interval
     const intervalMs = refreshIntervalMinutes * 60 * 1000;

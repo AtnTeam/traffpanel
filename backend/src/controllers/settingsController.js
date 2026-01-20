@@ -6,6 +6,7 @@ const SETTING_KEYS = {
   AUTO_REFRESH_INTERVAL: 'auto_refresh_interval',
   DATE_FROM: 'date_from',
   DATE_TO: 'date_to',
+  LAST_REFRESH_TIME: 'last_refresh_time',
 };
 
 /**
@@ -23,6 +24,7 @@ export const getSettings = async (req, res) => {
         autoRefreshInterval: parseInt(settings[SETTING_KEYS.AUTO_REFRESH_INTERVAL] || '60', 10),
         dateFrom: settings[SETTING_KEYS.DATE_FROM] || '2026-01-14',
         dateTo: settings[SETTING_KEYS.DATE_TO] || '2026-01-15',
+        lastRefreshTime: settings[SETTING_KEYS.LAST_REFRESH_TIME] || null,
       }
     });
   } catch (error) {
@@ -39,7 +41,7 @@ export const getSettings = async (req, res) => {
  */
 export const updateSettings = async (req, res) => {
   try {
-    const { autoRefreshEnabled, autoRefreshInterval, dateFrom, dateTo } = req.body;
+    const { autoRefreshEnabled, autoRefreshInterval, dateFrom, dateTo, lastRefreshTime } = req.body;
     
     // Update settings if provided
     if (autoRefreshEnabled !== undefined) {
@@ -58,6 +60,10 @@ export const updateSettings = async (req, res) => {
       await setSetting(SETTING_KEYS.DATE_TO, dateTo);
     }
     
+    if (lastRefreshTime !== undefined) {
+      await setSetting(SETTING_KEYS.LAST_REFRESH_TIME, lastRefreshTime);
+    }
+    
     // Return updated settings
     const settings = await getAllSettings();
     
@@ -68,6 +74,7 @@ export const updateSettings = async (req, res) => {
         autoRefreshInterval: parseInt(settings[SETTING_KEYS.AUTO_REFRESH_INTERVAL] || '60', 10),
         dateFrom: settings[SETTING_KEYS.DATE_FROM] || '2026-01-14',
         dateTo: settings[SETTING_KEYS.DATE_TO] || '2026-01-15',
+        lastRefreshTime: settings[SETTING_KEYS.LAST_REFRESH_TIME] || null,
       }
     });
   } catch (error) {
