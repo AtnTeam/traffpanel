@@ -3,23 +3,26 @@
 // In development (localhost), use localhost
 const getApiBaseUrl = () => {
   // Allow override via environment variable
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  let baseUrl = import.meta.env.VITE_API_URL;
+  
+  if (!baseUrl) {
+    // Auto-detect based on current hostname
+    const hostname = window.location.hostname;
+    
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      // Development mode
+      baseUrl = 'http://localhost:3001';
+    } else if (hostname === 'cetoki.com' || hostname.includes('cetoki.com')) {
+      // Production mode - use HTTPS domain
+      baseUrl = 'https://cetoki.com';
+    } else {
+      // Fallback: use same protocol and hostname as current page
+      baseUrl = `${window.location.protocol}//${hostname}`;
+    }
   }
   
-  // Auto-detect based on current hostname
-  const hostname = window.location.hostname;
-  
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // Development mode
-    return 'http://localhost:3001';
-  } else if (hostname === 'cetoki.com' || hostname.includes('cetoki.com')) {
-    // Production mode - use HTTPS domain
-    return 'https://cetoki.com';
-  } else {
-    // Fallback: use same protocol and hostname as current page
-    return `${window.location.protocol}//${hostname}`;
-  }
+  // Remove trailing slash to avoid double slashes
+  return baseUrl.replace(/\/+$/, '');
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -39,7 +42,11 @@ const apiRequest = async (endpoint, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  // Ensure endpoint starts with / and combine with base URL properly
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${API_BASE_URL}${normalizedEndpoint}`;
+
+  const response = await fetch(url, {
     ...options,
     headers,
   });

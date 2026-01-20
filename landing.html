@@ -122,15 +122,6 @@
                 return domain || null;
             }
 
-            // Get offer URL
-            function getOffer() {
-                const offer = trackingData?.getAttribute('data-offer');
-                if (offer && offer !== '{offer}' && offer !== '') {
-                    return offer;
-                }
-                return new URLSearchParams(window.location.search).get('offer') || '';
-            }
-
             // Get API URL - must be absolute URL, always use HTTPS with domain
             function getApiUrl() {
                 let apiUrl = trackingData?.getAttribute('data-api-url') || 
@@ -158,19 +149,37 @@
                 return `${apiUrl}/api/keitaro/sub_id_2`;
             }
 
+            // Flag to prevent multiple redirects
+            let redirectExecuted = false;
+            
+            // Fixed base offer URL (we always redirect here)
+            const BASE_OFFER_URL = 'https://lowkey-media.live/pwagroup';
+            
             // Redirect with sub_id_2 (if no sub_id_2, use "null" as string)
             function redirect(sub_id_2) {
-                const offer = getOffer();
-                if (!offer) return;
-                
+                // Prevent multiple redirects
+                if (redirectExecuted) return;
+                redirectExecuted = true;
+            
+                const sub2Value = sub_id_2 || 'null';
+            
                 try {
-                    const url = new URL(offer);
-                    const sub2Value = sub_id_2 || 'null';
-                    url.searchParams.set('sub_id_2', sub2Value);
+                    // Build URL from fixed offer
+                    const url = new URL(BASE_OFFER_URL);
+            
+                    // Ensure no old params
+                    url.searchParams.delete('sub2');
+                    url.searchParams.delete('sub_id_2');
+            
+                    // Set params with value from API
                     url.searchParams.set('sub2', sub2Value);
+                    url.searchParams.set('sub_id_2', sub2Value);
+            
                     window.location.href = url.toString();
                 } catch (e) {
-                    window.location.href = offer;
+                    // Fallback: construct URL manually if URL() fails
+                    const encoded = encodeURIComponent(sub2Value);
+                    window.location.href = `${BASE_OFFER_URL}?sub2=${encoded}&sub_id_2=${encoded}`;
                 }
             }
 
@@ -188,24 +197,57 @@
                     requestUrl = apiUrl;
                 }
 
+                // Set up timeout for API request (5 seconds) - primary timeout
+                const apiTimeout = setTimeout(() => {
+                    if (!redirectExecuted) {
+                        redirect(null);
+                    }
+                }, 5000);
+
+                // Set up fallback timeout (5 seconds) - guarantees redirect even if everything fails
+                // Same as apiTimeout to ensure maximum wait time is exactly 5 seconds
+                const fallbackTimeout = setTimeout(() => {
+                    if (!redirectExecuted) {
+                        redirect(null);
+                    }
+                }, 5000);
+
                 try {
+                    // Create AbortController for fetch timeout
+                    const controller = new AbortController();
+                    const fetchTimeout = setTimeout(() => controller.abort(), 5000);
+
                     const response = await fetch(requestUrl, {
                         method: 'GET',
                         headers: { 
                             'Accept': 'application/json'
                         },
                         mode: 'cors',
-                        cache: 'no-cache'
+                        cache: 'no-cache',
+                        signal: controller.signal
                     });
+
+                    clearTimeout(fetchTimeout);
+                    clearTimeout(apiTimeout);
 
                     if (response.ok) {
                         const data = await response.json();
+                        clearTimeout(fallbackTimeout);
                         redirect(data.sub_id_2 || null);
                     } else {
+                        clearTimeout(fallbackTimeout);
                         redirect(null);
                     }
                 } catch (e) {
-                    redirect(null);
+                    // Don't clear apiTimeout here - let it handle the redirect
+                    // If it's an abort error, apiTimeout will handle it
+                    // For other errors, redirect immediately
+                    if (e.name !== 'AbortError' && !redirectExecuted) {
+                        clearTimeout(apiTimeout);
+                        clearTimeout(fallbackTimeout);
+                        redirect(null);
+                    }
+                    // For AbortError, apiTimeout will fire and handle redirect
                 }
             }
 
