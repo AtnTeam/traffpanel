@@ -5,7 +5,7 @@ import DateRangePicker from './components/DateRangePicker';
 import DataTable from './components/DataTable';
 import LogViewer from './components/LogViewer';
 import KeitaroLogsViewer from './components/KeitaroLogsViewer';
-import { processClicks } from './services/api';
+import { processClicks, getSettings, updateSettings } from './services/api';
 import './App.css';
 
 const AppContent = () => {
@@ -17,6 +17,7 @@ const AppContent = () => {
   const [error, setError] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState('main'); // 'main' or 'keitaro'
+  const [settingsLoading, setSettingsLoading] = useState(true);
   
   // Auto-refresh states
   const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(false);
@@ -26,6 +27,7 @@ const AppContent = () => {
   const lastRefreshTimeRef = useRef(null);
   const countdownRef = useRef(null);
   const loadingProcessRef = useRef(false);
+  const saveSettingsTimeoutRef = useRef(null);
 
   // Predefined interval options (in minutes)
   const intervalOptions = [
@@ -38,6 +40,63 @@ const AppContent = () => {
     { value: 360, label: '6 hours' },
     { value: 480, label: '8 hours' },
   ];
+
+  // Load settings from server when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSettingsLoading(false);
+      return;
+    }
+
+    const loadSettings = async () => {
+      try {
+        setSettingsLoading(true);
+        const response = await getSettings();
+        if (response.success && response.settings) {
+          setIsAutoRefreshEnabled(response.settings.autoRefreshEnabled || false);
+          setRefreshIntervalMinutes(response.settings.autoRefreshInterval || 60);
+          setFrom(response.settings.dateFrom || '2026-01-14');
+          setTo(response.settings.dateTo || '2026-01-15');
+        }
+      } catch (err) {
+        console.error('Error loading settings:', err);
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, [isAuthenticated]);
+
+  // Save settings to server when they change
+  useEffect(() => {
+    if (!isAuthenticated || settingsLoading) return;
+
+    // Clear existing timeout
+    if (saveSettingsTimeoutRef.current) {
+      clearTimeout(saveSettingsTimeoutRef.current);
+    }
+
+    // Debounce saves to avoid too many requests
+    saveSettingsTimeoutRef.current = setTimeout(async () => {
+      try {
+        await updateSettings({
+          autoRefreshEnabled: isAutoRefreshEnabled,
+          autoRefreshInterval: refreshIntervalMinutes,
+          dateFrom: from,
+          dateTo: to,
+        });
+      } catch (err) {
+        console.error('Error saving settings:', err);
+      }
+    }, 500);
+
+    return () => {
+      if (saveSettingsTimeoutRef.current) {
+        clearTimeout(saveSettingsTimeoutRef.current);
+      }
+    };
+  }, [isAuthenticated, isAutoRefreshEnabled, refreshIntervalMinutes, from, to, settingsLoading]);
 
   // Update loading ref when loadingProcess changes
   useEffect(() => {
@@ -222,7 +281,7 @@ const AppContent = () => {
                       type="checkbox"
                       checked={isAutoRefreshEnabled}
                       onChange={(e) => setIsAutoRefreshEnabled(e.target.checked)}
-                      disabled={loadingProcess}
+                      disabled={loadingProcess || settingsLoading}
                     />
                     <span className="toggle-slider"></span>
                   </label>
@@ -236,7 +295,7 @@ const AppContent = () => {
                       id="refresh-interval"
                       value={refreshIntervalMinutes}
                       onChange={(e) => setRefreshIntervalMinutes(Number(e.target.value))}
-                      disabled={loadingProcess}
+                      disabled={loadingProcess || settingsLoading}
                       className="interval-select"
                     >
                       {intervalOptions.map(option => (

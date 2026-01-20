@@ -82,6 +82,15 @@ export const initDatabase = async () => {
       CREATE INDEX IF NOT EXISTS idx_keitaro_logs_created_at ON keitaro_logs(created_at);
       CREATE INDEX IF NOT EXISTS idx_keitaro_logs_source ON keitaro_logs(source);
       CREATE INDEX IF NOT EXISTS idx_keitaro_logs_found ON keitaro_logs(found);
+      
+      CREATE TABLE IF NOT EXISTS user_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        setting_key TEXT UNIQUE NOT NULL,
+        setting_value TEXT NOT NULL,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_setting_key ON user_settings(setting_key);
     `;
 
     await db.exec(createTableQuery);

@@ -7,6 +7,7 @@ import keitaroRoutes from './routes/keitaroRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import logsRoutes from './routes/logsRoutes.js';
 import keitaroLogsRoutes from './routes/keitaroLogsRoutes.js';
+import settingsRoutes from './routes/settingsRoutes.js';
 import { requestLogger } from './middleware/requestLogger.js';
 
 dotenv.config();
@@ -37,6 +38,7 @@ app.use('/api/clicks', clicksRoutes);
 app.use('/api/keitaro', keitaroRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/keitaro-logs', keitaroLogsRoutes);
+app.use('/api/settings', settingsRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });

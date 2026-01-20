@@ -97,3 +97,14 @@ export const getKeitaroLogById = async (id) => {
   return apiRequest(`/api/keitaro-logs/${id}`);
 };
 
+export const getSettings = async () => {
+  return apiRequest('/api/settings');
+};
+
+export const updateSettings = async (settings) => {
+  return apiRequest('/api/settings', {
+    method: 'POST',
+    body: JSON.stringify(settings),
+  });
+};
+
