@@ -57,11 +57,11 @@ export const fetchClicksData = async (from, to, offset = 0, limit = 5000) => {
         operator: "NOT_EQUAL",
         expression: "tiktok"
       },
-      {
-        name: "parent_campaign_id",
-        operator: "EQUALS",
-        expression: "1"
-      },
+      // {
+      //   name: "parent_campaign_id",
+      //   operator: "EQUALS",
+      //   expression: "1"
+      // },
 
     ],
     sort: [
